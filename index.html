@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>🌳 Brain Tree</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #4a4a4a;
+            color: #c9a961;
+            padding: 16px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .title { font-size: 28px; font-weight: bold; color: #c9a961; }
+        .subtitle { color: #999; font-size: 14px; }
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .btn-primary { background: #c9a961; color: white; }
+        .btn-secondary { background: #ddd; color: #333; }
+        .btn-danger { background: #ef4444; color: white; }
+        .tree-area {
+            background: #5a5a5a;
+            border-radius: 12px;
+            padding: 24px;
+            min-height: 500px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #999;
+        }
+        .node {
+            margin: 8px 0;
+            position: relative;
+        }
+        .node-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #000;
+            border: 4px solid #c9a961;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            text-align: center;
+            padding: 4px;
+        }
+        .circle:hover { transform: scale(1.1); transition: transform 0.2s; }
+        .badge {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            background: #c9a961;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .children { margin-left: 48px; border-left: 2px solid #00000040; }
+        .item {
+            background: #5a5a5a;
+            border-left: 4px solid #c9a961;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0 8px 48px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .item-title { flex: 1; color: #c9a961; font-weight: 500; }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-label { 
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-textarea { resize: vertical; }
+        .type-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .type-btn {
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+        }
+        .type-btn.active { background: #c9a961; color: white; }
+        .type-btn:not(.active) { background: #e5e7eb; color: #333; }
+        input[type="text"]:focus, textarea:focus {
+            outline: 2px solid #c9a961;
+        }
+        .info-box {
+            background: #5a5a5a;
+            border: 2px solid #c9a961;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+        .info-title { color: #c9a961; font-weight: bold; margin-bottom: 8px; }
+        .info-list { color: #c9a961; font-size: 14px; line-height: 1.8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <div class="title">🌳 Brain Tree</div>
+                <div class="subtitle">Click branches to grow your knowledge tree</div>
+            </div>
+            <button class="btn btn-primary" onclick="addMainBranch()">+ Add Main Branch</button>
+        </div>
+
+        <div id="tree-area" class="tree-area"></div>
+
+        <div class="info-box">
+            <div class="info-title">🌿 How it works:</div>
+            <div class="info-list">
+                • <strong>Click circles</strong> to expand/collapse branches<br>
+                • <strong>Add Folder:</strong> Creates a new branch<br>
+                • <strong>Add Item:</strong> Adds a leaf (image/link/note)<br>
+                • <strong>Numbers show</strong> items inside each branch
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tree = [];
+        let expanded = {};
+        let editing = null;
+        let currentModal = null;
+
+        // Load data
+        function loadData() {
+            const saved = localStorage.getItem('brain-tree-data');
+            if (saved) {
+                try {
+                    tree = JSON.parse(saved);
+                    render();
+                } catch (e) {
+                    console.error('Failed to load');
+                }
+            } else {
+                render();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('brain-tree-data', JSON.stringify(tree));
+        }
+
+        function addMainBranch() {
+            const branch = {
+                id: Date.now(),
+                name: 'New Branch',
+                children: [],
+                items: []
+            };
+            tree.push(branch);
+            saveData();
+            expanded[branch.id] = true;
+            editing = branch.id;
+            render();
+        }
+
+        function addChild(parentId) {
+            const child = {
+                id: Date.now(),
+                name: 'New Folder',
+                children: [],
+                items: []
+            };
+            
+            function add(nodes) {
+                return nodes.map(node => {
+                    if (node.id === parentId) {
+                        return { ...node, children: [...node.children, child] };
+                    }
+                    if (node.children.length > 0) {
+                        return { ...node, children: add(node.children) };
+                    }
+                    return node;
+                });
+            }
+            
+            tree = add(tree);
+            saveData();
+            expanded[parentId] = true;
+            editing = child.id;
+            render();
+        }
+
+        function deleteNode(id) {
+            function remove(nodes) {
+                return nodes.filter(n => n.id !== id).map(n => ({
+                    ...n,
+                    children: remove(n.children)
+                }));
+            }
+            tree = remove(tree);
+            saveData();
+            render();
+        }
+
+        function updateName(id, name) {
+            function update(nodes) {
+                return nodes.map(node => {
+                    if (node.id === id) {
+                        return { ...node, name };
+                    }
+                    if (node.children.length > 0) {
+                        return { ...node, children: update(node.children) };
+                    }
+                    return node;
+                });
+            }
+            tree = update(tree);
+            saveData();
+            editing = null;
+            render();
+        }
+
+        function toggleExpand(id) {
+            expanded[id] = !expanded[id];
+            render();
+        }
+
+        function showAddItemModal(nodeId) {
+            currentModal = nodeId;
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'item-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add New Item</h3>
+                        <button class="btn btn-secondary" onclick="closeModal()">×</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Item Type</label>
+                        <div class="type-selector">
+                            <button class="type-btn active" onclick="selectType('note', this)">📝 Note</button>
+                            <button class="type-btn" onclick="selectType('link', this)">🔗 Link</button>
+                            <button class="type-btn" onclick="selectType('image', this)">🖼️ Image</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input type="text" id="item-title" class="form-input" placeholder="Enter title">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea id="item-desc" class="form-textarea" rows="3" placeholder="Enter description"></textarea>
+                    </div>
+                    <div id="extra-fields"></div>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="saveItem()">💾 Save Item</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('item-modal');
+            if (modal) modal.remove();
+            currentModal = null;
+        }
+
+        let selectedType = 'note';
+        function selectType(type, btn) {
+            selectedType = type;
+            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const extra = document.getElementById('extra-fields');
+            if (type === 'link') {
+                extra.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">URL</label>
+                        <input type="url" id="item-url" class="form-input" placeholder="https://example.com">
+                    </div>
+                `;
+            } else if (type === 'image') {
+                extra.innerHTML = `
+                    <div class="form-group">
+                        <label class="form-label">Upload Image</label>
+                        <input type="file" id="item-image" class="form-input" accept="image/*">
+                    </div>
+                `;
+            } else {
+                extra.innerHTML = '';
+            }
+        }
+
+        function saveItem() {
+            const title = document.getElementById('item-title').value;
+            if (!title) return alert('Please enter a title');
+
+            const item = {
+                id: Date.now(),
+                type: selectedType,
+                title,
+                description: document.getElementById('item-desc').value,
+                createdAt: new Date().toISOString()
+            };
+
+            if (selectedType === 'link') {
+                item.url = document.getElementById('item-url').value;
+            } else if (selectedType === 'image') {
+                const file = document.getElementById('item-image').files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        item.imageData = e.target.result;
+                        addItemToNode(currentModal, item);
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            }
+
+            addItemToNode(currentModal, item);
+        }
+
+        function addItemToNode(nodeId, item) {
+            function add(nodes) {
+                return nodes.map(node => {
+                    if (node.id === nodeId) {
+                        return { ...node, items: [...(node.items || []), item] };
+                    }
+                    if (node.children.length > 0) {
+                        return { ...node, children: add(node.children) };
+                    }
+                    return node;
+                });
+            }
+            tree = add(tree);
+            saveData();
+            closeModal();
+            render();
+        }
+
+        function deleteItem(nodeId, itemId) {
+            function remove(nodes) {
+                return nodes.map(node => {
+                    if (node.id === nodeId) {
+                        return { ...node, items: node.items.filter(i => i.id !== itemId) };
+                    }
+                    if (node.children.length > 0) {
+                        return { ...node, children: remove(node.children) };
+                    }
+                    return node;
+                });
+            }
+            tree = remove(tree);
+            saveData();
+            render();
+        }
+
+        function viewItem(item) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            
+            let content = `<p>${item.description || ''}</p>`;
+            if (item.type === 'link') {
+                content += `<a href="${item.url}" target="_blank" style="color: #c9a961;">${item.url}</a>`;
+            } else if (item.type === 'image' && item.imageData) {
+                content += `<img src="${item.imageData}" style="max-width: 100%; border-radius: 8px;">`;
+            }
+            
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>${item.title}</h3>
+                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">×</button>
+                    </div>
+                    ${content}
+                    <p style="color: #999; font-size: 12px; margin-top: 16px;">Added: ${new Date(item.createdAt).toLocaleString()}</p>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function renderNode(node, depth = 0) {
+            const isExpanded = expanded[node.id];
+            const hasChildren = node.children.length > 0;
+            const hasItems = (node.items || []).length > 0;
+            const count = node.children.length + (node.items || []).length;
+
+            let html = `<div class="node" style="margin-left: ${depth * 48}px;">`;
+            html += `<div class="node-content">`;
+            
+            html += `<div class="circle" onclick="toggleExpand(${node.id})">`;
+            html += `<span>${node.name.substring(0, 10)}</span>`;
+            if (count > 0) {
+                html += `<div class="badge">${count}</div>`;
+            }
+            html += `</div>`;
+
+            html += `<div class="actions">`;
+            if (editing === node.id) {
+                html += `<input type="text" value="${node.name}" 
+                    onblur="updateName(${node.id}, this.value)" 
+                    onkeydown="if(event.key==='Enter') updateName(${node.id}, this.value)"
+                    autofocus
+                    style="padding: 8px; border: 2px solid #c9a961; border-radius: 8px;">`;
+            } else {
+                html += `<button class="btn btn-secondary" onclick="editing = ${node.id}; render();">✏️ Edit</button>`;
+                html += `<button class="btn btn-primary" onclick="addChild(${node.id})">📁 Folder</button>`;
+                html += `<button class="btn btn-primary" onclick="showAddItemModal(${node.id})">+ Item</button>`;
+                html += `<button class="btn btn-danger" onclick="if(confirm('Delete?')) deleteNode(${node.id})">🗑️</button>`;
+            }
+            html += `</div></div>`;
+
+            if (isExpanded && hasItems) {
+                node.items.forEach(item => {
+                    const icon = item.type === 'image' ? '🖼️' : item.type === 'link' ? '🔗' : '📝';
+                    html += `<div class="item">`;
+                    html += `<span>${icon}</span>`;
+                    html += `<span class="item-title">${item.title}</span>`;
+                    html += `<button class="btn btn-secondary" onclick='viewItem(${JSON.stringify(item).replace(/'/g, "\\'")})'>👁️</button>`;
+                    html += `<button class="btn btn-danger" onclick="deleteItem(${node.id}, ${item.id})">🗑️</button>`;
+                    html += `</div>`;
+                });
+            }
+
+            if (isExpanded && hasChildren) {
+                html += `<div class="children">`;
+                node.children.forEach(child => {
+                    html += renderNode(child, depth + 1);
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        function render() {
+            const area = document.getElementById('tree-area');
+            if (tree.length === 0) {
+                area.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 64px; margin-bottom: 16px;">🌱</div>
+                        <p style="font-size: 18px; color: #c9a961; margin-bottom: 8px;">Plant your first branch</p>
+                        <p style="color: #999;">Click "Add Main Branch" to start</p>
+                    </div>
+                `;
+            } else {
+                area.innerHTML = tree.map(node => renderNode(node, 0)).join('');
+            }
+        }
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
